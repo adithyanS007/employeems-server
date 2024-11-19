@@ -14,10 +14,11 @@ import connectToDatabase from './db/db.js'
 connectToDatabase()
 const app = express()
 app.use(cors({
-    origin: ["https://employeems-client-pi.vercel.app"],
+    origin: "https://employeems-client-pi.vercel.app",  // Make sure this matches your client URL exactly
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-}))
+    allowedHeaders: ["Content-Type", "Authorization"],  // Allow necessary headers
+    credentials: true,
+}));
 app.use(express.json())
 app.use(express.static('public/uploads'))
 app.use('/api/auth', authRouter)
