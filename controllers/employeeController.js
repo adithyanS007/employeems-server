@@ -1,47 +1,64 @@
-    import multer from "multer";
-    import Employee from "../models/employee.js";
-    import User from "../models/User.js";
-    import Department from "../models/department.js";
-    import bcrypt from "bcrypt";
-    import path from "path";
+import multer from "multer";
+import Employee from "../models/employee.js";
+import User from "../models/User.js";
+import bcrypt from "bcrypt";
+import path from "path";
+import express from "express";
 
-    const storage = multer.diskStorage({
-        destination: (req, file, cb) => {
-            cb(null, "public/uploads");
-        },
-        filename: (req, file, cb) => {
-            cb(null, Date.now() + path.extname(file.originalname));
-        },
-    });
+const app = express();
 
-    const upload = multer({ 
-        storage: storage,
-        limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-    });
+// Middleware to handle large requests
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-    const addEmployee = async (req, res) => {
+// Multer storage and file size limit configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "public/uploads");
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    },
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB file size limit
+}).single("profileImage"); // Assuming you're sending the file as 'profileImage'
+
+const addEmployee = async (req, res) => {
+    upload(req, res, async (err) => {
+        if (err instanceof multer.MulterError) {
+            return res.status(400).json({ success: false, error: err.message }); // Multer errors
+        } else if (err) {
+            return res.status(500).json({ success: false, error: "server error in uploading file" });
+        }
+
         try {
-            const { 
-                name, 
-                email, 
-                employeeId, 
-                dob, 
-                gender, 
-                maritalStatus, 
-                designation, 
-                department, 
-                salary, 
-                password, 
-                role 
+            const {
+                name,
+                email,
+                employeeId,
+                dob,
+                gender,
+                maritalStatus,
+                designation,
+                department,
+                salary,
+                password,
+                role,
             } = req.body;
 
+            // Check if the user already exists
             const user = await User.findOne({ email });
             if (user) {
                 return res.status(400).json({ success: false, error: "User already registered in employee" });
             }
 
+            // Hash password
             const hashPassword = await bcrypt.hash(password, 10);
 
+            // Save user
             const newUser = new User({
                 name,
                 email,
@@ -49,8 +66,10 @@
                 role,
                 profileImage: req.file ? req.file.filename : "",
             });
+
             const savedUser = await newUser.save();
 
+            // Save employee details
             const newEmployee = new Employee({
                 userId: savedUser._id,
                 employeeId,
@@ -63,11 +82,14 @@
             });
 
             await newEmployee.save();
-            return res.status(200).json({ success: true, message: "employee created" });
+
+            return res.status(200).json({ success: true, message: "Employee created" });
         } catch (error) {
-            return res.status(500).json({ success: false, error: "server error in adding employee" });
+            return res.status(500).json({ success: false, error: "Server error in adding employee" });
         }
-    };
+    });
+};
+
 
 const getEmployees = async (req, res) => {
     try {
