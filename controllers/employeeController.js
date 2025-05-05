@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB file size limit
-}).single("profileImage"); // Assuming you're sending the file as 'profileImage'
+}) // Assuming you're sending the file as 'profileImage'
 
 const addEmployee = async (req, res) => {
     upload(req, res, async (err) => {

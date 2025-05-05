@@ -19,6 +19,10 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"],  // Allow necessary headers
     credentials: true,
 }));
+
+// this to handle preflight CORS properly
+app.options('*', cors());
+
 app.use(express.json())
 app.use(express.static('public/uploads'))
 app.use('/api/auth', authRouter)
